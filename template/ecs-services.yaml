@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy a service into an ECS cluster behind a public load balancer.
+Parameters:
+  ExportClusterStackName:
+    Type: String
+  ExportVpcStackName:
+    Description: The name of the vpc Stack
+    Type: String
+  ExportRDSStackName:
+    Type: String
+  ServiceName:
+    Type: String
+  ImageUrl:
+    Type: String
+  ContainerPort:
+    Type: Number
+    Description: Type the port to receive traffic on
+  Path:
+    Type: String
+  Priority:
+    Type: Number
+  DesiredCount:
+    Type: Number
+  Role:
+    Type: String
+  Profile:
+    Type: String
+  DBNAME:
+    Type: String
+  DBUSERNAME:
+    Type: String
+  DBPASSWORD:
+    Type: String
+  DBPORT:
+    Type: Number
+
+Conditions:
+  HasCustomRole: !Not [ !Equals [!Ref 'Role', ''] ]
+
+Resources:
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: spring-task
+      NetworkMode: bridge
+      RequiresCompatibilities:
+          - EC2
+      Cpu: 1024
+      Memory: 1024
+      # Cpu: !Ref ContainerCpu
+      # Memory: !Ref ContainerMemory
+      TaskRoleArn:
+        Fn::If:
+          - 'HasCustomRole'
+          - !Ref 'Role'
+          - !Ref "AWS::NoValue"
+      ContainerDefinitions:
+        - Name: !Ref 'ServiceName'
+          Image: !Ref 'ImageUrl'
+          PortMappings: 
+             - ContainerPort: !Ref ContainerPort
+               Protocol: tcp
+     
+
+
+          Environment:
+          - Name: "DB_NAME"
+            Value: !Ref DBNAME
+          - Name: "DB_USERNAME"
+            Value: !Ref DBUSERNAME
+          - Name: "DB_PORT"
+            Value: !Ref DBPORT
+          - Name: "DB_ENDPOINT"
+            Value: 
+               Fn::ImportValue: !Sub ${ExportRDSStackName}-DatabaseEndpoint
+          - Name: "SPRING_PROFILES_ACTIVE"
+            Value: !Ref Profile
+          - Name: "DB_PASSWORD"
+            Value: !Ref DBPASSWORD
+      
+
+  Service:
+    Type: AWS::ECS::Service
+    # DependsOn: LoadBalancerRule
+    Properties:
+      ServiceName: !Ref 'ServiceName'
+      Cluster:
+          Fn::ImportValue: 
+            !Sub ${ExportClusterStackName}-Cluster
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 75
+      DesiredCount: !Ref DesiredCount
+      TaskDefinition: !Ref 'TaskDefinition'
+      LoadBalancers:
+        - ContainerName: !Ref 'ServiceName'
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: 
+            Fn::ImportValue: 
+              !Sub ${ExportVpcStackName}-TargetGroup
+

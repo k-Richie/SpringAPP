@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: creates an RDS database with MYSQL engine.
+  
+Parameters:
+  ExportVpcStackName:
+    Description: The name of the vpc Stack
+    Type: String
+
+  DBInstanceIdentifier:
+    Default: mysqldb
+    MaxLength: 60
+    MinLength: 1
+    Type: String
+
+  DBName:
+    Default: applicationdb
+    Description: MYSQL database name
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+
+  DBUser:
+    Default: dbadmin
+    NoEcho: 'true'
+    Description: username for MYSQL database access account
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+
+  DBPassword:
+    Default: Password123
+    NoEcho: 'true'
+    Type: String
+
+  DBAllocatedStorage:
+    Default: '20'
+    Description: The size of the database (Gb)
+    Type: Number
+    MinValue: '5'
+    MaxValue: '1024'
+    ConstraintDescription: must be between 5 and 1024Gb.
+
+  DBInstanceClass:
+    Description: The database instance type
+    Type: String
+    Default: db.t2.small
+    
+  MultiAZ:
+    Description: Creates a Multi-AZ MYSQL Amazon RDS database instance.
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    ConstraintDescription: must be true or false.
+  
+Resources:
+  DatabasesSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds:
+        - Fn::ImportValue: !Sub ${ExportVpcStackName}-RDSPrivateSubnet1
+        - Fn::ImportValue: !Sub ${ExportVpcStackName}-RDSPrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: database subnets
+
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: !Ref DBAllocatedStorage
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      DBInstanceClass: !Ref DBInstanceClass
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      DBName: !Ref DBName
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DatabasesSubnetGroup
+      Engine: MYSQL
+      EngineVersion: 8.0.32
+      MasterUsername: !Ref DBUser
+      MultiAZ: !Ref MultiAZ
+      PubliclyAccessible: false
+      VPCSecurityGroups: 
+         - Fn::ImportValue: !Sub ${ExportVpcStackName}-DataBaseSecurityGroup
+  
+Outputs:
+  DatabaseEndpoint:
+    Value: !GetAtt DatabaseInstance.Endpoint.Address
+    Export:
+      Name: !Sub "${AWS::StackName}-DatabaseEndpoint"
+    
+
+
+    
+  
+

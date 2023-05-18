@@ -1,0 +1,34 @@
+[
+  {
+    "ParameterKey": "DBUser",
+    "ParameterValue": "dbadmin"
+  },
+  {
+    "ParameterKey": "DBPassword",
+    "ParameterValue": "mydbpassword"
+  },
+  {
+    "ParameterKey": "ExportVpcStackName",
+    "ParameterValue": "myvpc"
+  },
+  {
+    "ParameterKey": "DBInstanceIdentifier",
+    "ParameterValue": "mysqldb"
+  },
+  {
+    "ParameterKey": "DBName",
+    "ParameterValue": "applicationdb"
+  },
+  {
+    "ParameterKey": "DBAllocatedStorage",
+    "ParameterValue": "20"
+  },
+  {
+    "ParameterKey": "DBInstanceClass",
+    "ParameterValue": "db.t2.small"
+  },
+  {
+    "ParameterKey": "MultiAZ",
+    "ParameterValue": "false"
+  }
+]

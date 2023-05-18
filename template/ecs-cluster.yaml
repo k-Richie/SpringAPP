@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:  
+  ClusterName:
+    Type: String
+
+Resources:
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ClusterName
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: test-log-group
+
+Outputs:
+  ClusterNameExport:
+    Value: !Ref Cluster
+    Export:
+      Name: !Sub ${AWS::StackName}-Cluster
+
+      
